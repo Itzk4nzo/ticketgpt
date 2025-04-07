@@ -269,6 +269,11 @@ client.on(Events.InteractionCreate, async (interaction) => {
 });
 
 // LOGIN
-client.login(process.env.TOKEN).catch((err) => {
-  console.error("❌ Failed to login:", err);
+client.login(process.env.TOKEN).then(() => {
+  console.log('✅ Successfully logged in to Discord!');
+}).catch((err) => {
+  console.error("❌ Failed to login:", err.message);
+  if (err.message.includes('invalid token')) {
+    console.error("❗ Please check if your TOKEN is correct in the Secrets tab");
+  }
 });
