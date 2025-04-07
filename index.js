@@ -29,8 +29,11 @@ const client = new Client({
     GatewayIntentBits.GuildMessages,
     GatewayIntentBits.GuildMembers,
     GatewayIntentBits.MessageContent,
+    GatewayIntentBits.DirectMessages,
+    GatewayIntentBits.GuildPresences,
+    GatewayIntentBits.GuildMessageReactions,
   ],
-  partials: [Partials.Channel],
+  partials: [Partials.Channel, Partials.Message, Partials.Reaction],
 });
 
 // CONFIGS
@@ -92,9 +95,27 @@ const ticketCategories = [
   },
 ];
 
+// Check environment variables
+const requiredEnvVars = [
+  'TOKEN',
+  'STAFF_ROLE_ID',
+  'GENERAL_SUPPORT_CATEGORY',
+  'PLAYER_REPORT_CATEGORY',
+  'BUY_CATEGORY',
+  'CLAIMING_CATEGORY',
+  'ISSUES_CATEGORY'
+];
+
 // ON READY
 client.once("ready", async () => {
   try {
+    // Check for missing environment variables
+    const missingVars = requiredEnvVars.filter(envVar => !process.env[envVar]);
+    if (missingVars.length > 0) {
+      console.error('❌ Missing required environment variables:', missingVars.join(', '));
+      process.exit(1);
+    }
+
     await client.application.commands.set([
       { name: "panel", description: "Send the ticket panel embed" },
     ]);
