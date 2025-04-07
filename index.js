@@ -82,6 +82,24 @@ client.on('interactionCreate', async interaction => {
         filter: i => i.customId === `ticket-modal-${category.value}`
       });
 
+      // Check existing tickets
+      const existingTickets = interaction.guild.channels.cache.filter(ch => 
+        ch.name.includes(interaction.user.username) && 
+        (ch.parentId === process.env.CATEGORY_BUY ||
+         ch.parentId === process.env.CATEGORY_GENERAL_SUPPORT ||
+         ch.parentId === process.env.CATEGORY_PLAYER_REPORT ||
+         ch.parentId === process.env.CATEGORY_CLAIMING ||
+         ch.parentId === process.env.CATEGORY_ISSUES)
+      );
+
+      if (existingTickets.size >= 2) {
+        await modalResponse.reply({ 
+          content: 'You can only have up to 2 tickets open at a time. Please close your existing tickets first.', 
+          ephemeral: true 
+        });
+        return;
+      }
+
       const channel = await interaction.guild.channels.create({
         name: `${category.value}-${interaction.user.username}`,
         type: ChannelType.GuildText,
