@@ -1,3 +1,4 @@
+
 export const ticketCategories = [
   {
     label: 'GENERAL SUPPORT',

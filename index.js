@@ -73,6 +73,7 @@ client.on('interactionCreate', async interaction => {
     });
 
     const questions = questionFlows[category.value];
+    const questions = questionFlows[category.value];
     const embed = new EmbedBuilder()
       .setTitle('Ticket Created')
       .setDescription(`Welcome to your ticket, ${interaction.user}!\nPlease answer the following questions:`)
