@@ -1,5 +1,5 @@
 
-import { Client, GatewayIntentBits, Collection, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ChannelType } from 'discord.js';
+import { Client, GatewayIntentBits, Collection, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ChannelType, ModalBuilder, TextInputBuilder, TextInputStyle } from 'discord.js';
 import { config } from 'dotenv';
 import fs from 'fs';
 import path from 'path';
@@ -72,14 +72,45 @@ client.on('interactionCreate', async interaction => {
       ],
     });
 
-    const questions = questionFlows[category.value];
-    const embed = new EmbedBuilder()
-      .setTitle('Ticket Created')
-      .setDescription(`Welcome to your ticket, ${interaction.user}!\nPlease answer the following questions:`)
-      .setColor('#ffff00')
-      .addFields(questions.map(q => ({ name: q.label, value: 'Waiting for response...', inline: false })));
+    // Create and show modal
+    const modal = new ModalBuilder()
+      .setCustomId(`ticket-modal-${category.value}`)
+      .setTitle(`${category.label} Ticket`);
 
-    const buttons = new ActionRowBuilder()
+    const questions = questionFlows[category.value];
+    const actionRows = questions.map(question => {
+      const textInput = new TextInputBuilder()
+        .setCustomId(question.customId)
+        .setLabel(question.label)
+        .setPlaceholder(question.placeholder)
+        .setStyle(TextInputStyle.Short)
+        .setRequired(question.required);
+
+      return new ActionRowBuilder().addComponents(textInput);
+    });
+
+    modal.addComponents(actionRows);
+    await interaction.showModal(modal);
+    
+    try {
+      const modalResponse = await interaction.awaitModalSubmit({
+        time: 300000,
+        filter: i => i.customId === `ticket-modal-${category.value}`
+      });
+
+      const responses = questions.map(q => ({
+        name: q.label,
+        value: modalResponse.fields.getTextInputValue(q.customId),
+        inline: false
+      }));
+
+      const embed = new EmbedBuilder()
+        .setTitle('Ticket Created')
+        .setDescription(`Ticket created by ${interaction.user}`)
+        .setColor('#ffff00')
+        .addFields(responses);
+
+      const buttons = new ActionRowBuilder()
       .addComponents(
         new ButtonBuilder()
           .setCustomId('close-ticket')
