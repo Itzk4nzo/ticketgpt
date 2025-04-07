@@ -1,5 +1,5 @@
 import pkg from 'discord.js';
-const { Client, GatewayIntentBits, ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder } = pkg;
+const { Client, GatewayIntentBits, ActionRowBuilder, StringSelectMenuBuilder, EmbedBuilder } = pkg;
 import dotenv from 'dotenv';
 import express from 'express';
 
@@ -8,7 +8,7 @@ dotenv.config();
 
 // Set up Express server (for webhooks or web interaction if needed)
 const app = express();
-const PORT = process.env.PORT || 4800;  // Changed the port here to 4800
+const PORT = process.env.PORT || 4800;  // Set port to 4800
 
 app.get('/', (req, res) => {
     res.send('Bot is running!');
@@ -23,7 +23,9 @@ const client = new Client({
     intents: [
         GatewayIntentBits.Guilds,
         GatewayIntentBits.GuildMessages,
-        GatewayIntentBits.MessageContent
+        GatewayIntentBits.MessageContent,  // Add the correct intents here
+        GatewayIntentBits.MessageCreate,   // For interaction and message handling
+        GatewayIntentBits.GuildMembers     // Add this for guild member updates (optional)
     ]
 });
 
@@ -32,7 +34,7 @@ client.once('ready', () => {
     console.log(`Logged in as ${client.user.tag}`);
 });
 
-// Define categories
+// Define categories with associated questions
 const ticketCategories = {
     GENERAL_SUPPORT: {
         emoji: '<a:support:1353334302036856885>',
@@ -69,79 +71,47 @@ client.on('messageCreate', async (message) => {
     if (message.content === '!panel') {
         const row = new ActionRowBuilder()
             .addComponents(
-                new ButtonBuilder()
-                    .setCustomId('support_ticket')
-                    .setLabel('Create Support Ticket')
-                    .setStyle(ButtonStyle.Primary),
-                new ButtonBuilder()
-                    .setCustomId('report_ticket')
-                    .setLabel('Create Report Ticket')
-                    .setStyle(ButtonStyle.Danger),
-                new ButtonBuilder()
-                    .setCustomId('buy_ticket')
-                    .setLabel('Create Buy Ticket')
-                    .setStyle(ButtonStyle.Success),
-                new ButtonBuilder()
-                    .setCustomId('claim_ticket')
-                    .setLabel('Create Claim Ticket')
-                    .setStyle(ButtonStyle.Secondary),
-                new ButtonBuilder()
-                    .setCustomId('issue_ticket')
-                    .setLabel('Create Issue Ticket')
-                    .setStyle(ButtonStyle.Primary)
+                new StringSelectMenuBuilder()
+                    .setCustomId('ticket_select')
+                    .setPlaceholder('Select a Ticket Type')
+                    .addOptions(
+                        { label: 'General Support', value: 'GENERAL_SUPPORT' },
+                        { label: 'Player Report', value: 'PLAYER_REPORT' },
+                        { label: 'Buy', value: 'BUY' },
+                        { label: 'Claiming', value: 'CLAIMING' },
+                        { label: 'Issues', value: 'ISSUES' }
+                    )
             );
 
         const embed = new EmbedBuilder()
             .setColor(0x0099FF)
             .setTitle('ZionixMC • Ticket System')
-            .setDescription('Please select a ticket type by clicking a button below to get started.');
+            .setDescription('Please select a ticket type from the dropdown below to get started.');
 
         await message.channel.send({
             embeds: [embed],
             components: [row]
         });
     }
-
-    // Handle button interactions
-    if (message.componentType === 'BUTTON') {
-        const category = ticketCategories[message.customId.toUpperCase() + '_TICKET'];
-
-        if (category) {
-            const embed = new EmbedBuilder()
-                .setColor(0x00FF00)
-                .setTitle(`${category.name} Ticket`)
-                .setDescription(`Please answer the following questions to help us assist you:`);
-
-            await message.channel.send({ embeds: [embed] });
-
-            // Send the questions for the selected ticket category
-            for (const question of category.questions) {
-                await message.channel.send(question);
-            }
-        }
-    }
 });
 
-// Event handler for when a modal interaction is received (if using modals)
+// Event handler for interactions (like selecting ticket category)
 client.on('interactionCreate', async (interaction) => {
-    if (!interaction.isButton()) return;
+    if (!interaction.isSelectMenu()) return;
 
-    if (interaction.customId.startsWith('ticket_')) {
-        const categoryName = interaction.customId.split('_')[1];
-        const category = ticketCategories[categoryName];
+    const category = ticketCategories[interaction.values[0]];
 
-        if (category) {
-            const embed = new EmbedBuilder()
-                .setColor(0x0099FF)
-                .setTitle(`${category.name} Ticket`)
-                .setDescription('Please provide the necessary information to open a ticket.');
+    if (category) {
+        const embed = new EmbedBuilder()
+            .setColor(0x00FF00)
+            .setTitle(`${category.name} Ticket`)
+            .setDescription(`Please answer the following questions to help us assist you:`);
 
-            await interaction.reply({ embeds: [embed], ephemeral: true });
+        await interaction.reply({ embeds: [embed], ephemeral: true });
 
-            // Ask questions dynamically from the category
-            for (let i = 0; i < category.questions.length; i++) {
-                await interaction.channel.send(category.questions[i]);
-            }
+        // Send the questions for the selected ticket category
+        for (const question of category.questions) {
+            await interaction.followUp(question);
         }
     }
 });
