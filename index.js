@@ -146,6 +146,7 @@ client.on('interactionCreate', async interaction => {
 
   if (interaction.isButton()) {
     if (interaction.customId === 'close-ticket') {
+      await interaction.deferReply({ ephemeral: true });
       const transcript = await createTranscript(interaction.channel);
       const transcriptChannel = interaction.guild.channels.cache.get(process.env.TRANSCRIPT_CHANNEL_ID);
       if (transcriptChannel) {
@@ -155,8 +156,8 @@ client.on('interactionCreate', async interaction => {
         });
       }
       await interaction.channel.send({ files: [transcript] });
+      await interaction.editReply({ content: 'Closing ticket...', ephemeral: true });
       setTimeout(() => interaction.channel.delete(), 5000);
-      await interaction.reply({ content: 'Closing ticket...', ephemeral: true });
     }
 
     if (interaction.customId === 'claim-ticket') {
