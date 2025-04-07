@@ -133,7 +133,7 @@ client.on('interactionCreate', async interaction => {
 
       await channel.send({ content: `<@&${process.env.STAFF_ROLE_ID}> ${interaction.user}`, embeds: [welcomeEmbed, embed], components: [buttons] });
 
-      await interaction.reply({ content: `Ticket created! ${channel}`, ephemeral: true });
+      await modalResponse.reply({ content: `Ticket created! ${channel}`, ephemeral: true });
     } catch (error) {
       console.error('Error handling modal submission:', error);
       await interaction.followUp({ content: 'There was an error processing your ticket request.', ephemeral: true }).catch(console.error);
