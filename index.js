@@ -110,19 +110,29 @@ client.on('interactionCreate', async interaction => {
         .setColor('#ffff00')
         .addFields(responses);
 
+      const welcomeEmbed = new EmbedBuilder()
+        .setTitle('Welcome to Support!')
+        .setDescription(`Hello ${interaction.user},\n\nA staff member will be with you shortly. Please be patient and provide any additional information that might help us assist you better.\n\n**Category**: ${category.label}\n**Status**: Open`)
+        .setColor('#00ff00')
+        .setTimestamp();
+
       const buttons = new ActionRowBuilder()
         .addComponents(
+          new ButtonBuilder()
+            .setCustomId('claim-ticket')
+            .setLabel('Claim Ticket')
+            .setStyle(ButtonStyle.Success),
           new ButtonBuilder()
             .setCustomId('close-ticket')
             .setLabel('Close Ticket')
             .setStyle(ButtonStyle.Danger),
           new ButtonBuilder()
-            .setCustomId('claim-ticket')
-            .setLabel('Claim Ticket')
-            .setStyle(ButtonStyle.Success)
+            .setCustomId('close-with-reason')
+            .setLabel('Close with Reason')
+            .setStyle(ButtonStyle.Secondary)
         );
 
-      await channel.send({ content: `<@&${process.env.STAFF_ROLE_ID}> ${interaction.user}`, embeds: [embed], components: [buttons] });
+      await channel.send({ content: `<@&${process.env.STAFF_ROLE_ID}> ${interaction.user}`, embeds: [welcomeEmbed, embed], components: [buttons] });
       setTimeout(() => channel.bulkDelete(1), 1000);
 
       await interaction.reply({ content: `Ticket created! ${channel}`, ephemeral: true });
@@ -141,8 +151,59 @@ client.on('interactionCreate', async interaction => {
     }
 
     if (interaction.customId === 'claim-ticket') {
-      await interaction.reply({ content: `Ticket claimed by ${interaction.user}!` });
+      const claimEmbed = new EmbedBuilder()
+        .setTitle('Ticket Claimed')
+        .setDescription(`This ticket has been claimed by ${interaction.user}`)
+        .setColor('#00ff00')
+        .setTimestamp();
+      
+      await interaction.message.edit({
+        embeds: [interaction.message.embeds[0].setDescription(interaction.message.embeds[0].description.replace('Open', `Claimed by ${interaction.user.tag}`)), interaction.message.embeds[1]],
+        components: [new ActionRowBuilder()
+          .addComponents(
+            new ButtonBuilder()
+              .setCustomId('close-ticket')
+              .setLabel('Close Ticket')
+              .setStyle(ButtonStyle.Danger),
+            new ButtonBuilder()
+              .setCustomId('close-with-reason')
+              .setLabel('Close with Reason')
+              .setStyle(ButtonStyle.Secondary)
+          )]
+      });
+      
+      await interaction.reply({ embeds: [claimEmbed] });
     }
+
+    if (interaction.customId === 'close-with-reason') {
+      const modal = new ModalBuilder()
+        .setCustomId('close-reason-modal')
+        .setTitle('Close Ticket');
+
+      const reasonInput = new TextInputBuilder()
+        .setCustomId('close-reason')
+        .setLabel('Reason for closing')
+        .setStyle(TextInputStyle.Paragraph)
+        .setRequired(true)
+        .setPlaceholder('Enter the reason for closing this ticket');
+
+      modal.addComponents(new ActionRowBuilder().addComponents(reasonInput));
+      await interaction.showModal(modal);
+    }
+  }
+
+  if (interaction.isModalSubmit() && interaction.customId === 'close-reason-modal') {
+    const reason = interaction.fields.getTextInputValue('close-reason');
+    const closeEmbed = new EmbedBuilder()
+      .setTitle('Ticket Closed')
+      .setDescription(`Ticket closed by ${interaction.user}\nReason: ${reason}`)
+      .setColor('#ff0000')
+      .setTimestamp();
+
+    const transcript = await createTranscript(interaction.channel);
+    await interaction.channel.send({ embeds: [closeEmbed], files: [transcript] });
+    setTimeout(() => interaction.channel.delete(), 5000);
+    await interaction.reply({ content: 'Closing ticket with reason...', ephemeral: true });
   }
 });
 
