@@ -1,120 +1,114 @@
-import pkg from 'discord.js';
-const { Client, GatewayIntentBits, ActionRowBuilder, StringSelectMenuBuilder, EmbedBuilder } = pkg;
-import dotenv from 'dotenv';
-import express from 'express';
 
-// Load environment variables
-dotenv.config();
+import { Client, GatewayIntentBits, Collection, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ChannelType } from 'discord.js';
+import { config } from 'dotenv';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { ticketCategories, questionFlows } from './config.js';
+import { createTranscript } from './utils/createTranscript.js';
 
-// Set up Express server (for webhooks or web interaction if needed)
-const app = express();
-const PORT = process.env.PORT || 4800;  // Set port to 4800
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
-app.get('/', (req, res) => {
-    res.send('Bot is running!');
-});
+config();
 
-app.listen(PORT, () => {
-    console.log(`Express server is running on port ${PORT}`);
-});
-
-// Initialize the client with the necessary intents
 const client = new Client({
-    intents: [
-        GatewayIntentBits.Guilds,
-        GatewayIntentBits.GuildMessages,
-        GatewayIntentBits.MessageContent,  // Add the correct intents here
-        GatewayIntentBits.MessageCreate,   // For interaction and message handling
-        GatewayIntentBits.GuildMembers     // Add this for guild member updates (optional)
-    ]
+  intents: [
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMessages,
+    GatewayIntentBits.MessageContent,
+    GatewayIntentBits.GuildMembers
+  ]
 });
 
-// Event handler for when the bot is ready
+client.commands = new Collection();
+
+// Load commands
+const commandsPath = path.join(__dirname, 'commands');
+const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.js'));
+
+for (const file of commandFiles) {
+  const filePath = path.join(commandsPath, file);
+  const command = await import(`file://${filePath}`);
+  if ('data' in command.default && 'execute' in command.default) {
+    client.commands.set(command.default.data.name, command.default);
+  }
+}
+
 client.once('ready', () => {
-    console.log(`Logged in as ${client.user.tag}`);
+  console.log(`Logged in as ${client.user.tag}`);
 });
 
-// Define categories with associated questions
-const ticketCategories = {
-    GENERAL_SUPPORT: {
-        emoji: '<a:support:1353334302036856885>',
-        name: 'GENERAL SUPPORT',
-        questions: ['Minecraft Username', 'Issue faced', 'Platform (Java / PE / Bedrock)']
-    },
-    PLAYER_REPORT: {
-        emoji: '<:barrier:1304789987954262046>',
-        name: 'PLAYER REPORT',
-        questions: ['Minecraft Username', 'Whom are you reporting?', 'What did they do?', 'Do you have any proof? (Yes/No)']
-    },
-    BUY: {
-        emoji: '<a:Cart:1357966551508324492>',
-        name: 'BUY',
-        questions: ['Minecraft Username', 'What would you like to buy?', 'Payment Method']
-    },
-    CLAIMING: {
-        emoji: '<a:Gift:1353330955535908925>',
-        name: 'CLAIMING',
-        questions: ['Minecraft Username', 'What did you win?', 'Do you have proof? (Yes/No)']
-    },
-    ISSUES: {
-        emoji: '<a:notepad_gif:1296821272424218715>',
-        name: 'ISSUES',
-        questions: ['Minecraft Username', 'Issue faced', 'Platform (Java / PE / Bedrock)']
+client.on('interactionCreate', async interaction => {
+  if (interaction.isCommand()) {
+    const command = client.commands.get(interaction.commandName);
+    if (!command) return;
+
+    try {
+      await command.execute(interaction);
+    } catch (error) {
+      console.error(error);
+      await interaction.reply({ content: 'There was an error executing this command!', ephemeral: true });
     }
-};
+  }
 
-// Event handler for when a message is received
-client.on('messageCreate', async (message) => {
-    if (message.author.bot) return; // Ignore bot messages
+  if (interaction.isStringSelectMenu() && interaction.customId === 'select-category') {
+    const category = ticketCategories.find(cat => cat.value === interaction.values[0]);
+    if (!category) return;
 
-    // Command to trigger the ticket panel
-    if (message.content === '!panel') {
-        const row = new ActionRowBuilder()
-            .addComponents(
-                new StringSelectMenuBuilder()
-                    .setCustomId('ticket_select')
-                    .setPlaceholder('Select a Ticket Type')
-                    .addOptions(
-                        { label: 'General Support', value: 'GENERAL_SUPPORT' },
-                        { label: 'Player Report', value: 'PLAYER_REPORT' },
-                        { label: 'Buy', value: 'BUY' },
-                        { label: 'Claiming', value: 'CLAIMING' },
-                        { label: 'Issues', value: 'ISSUES' }
-                    )
-            );
+    const channel = await interaction.guild.channels.create({
+      name: `ticket-${interaction.user.username}`,
+      type: ChannelType.GuildText,
+      parent: category.folderId,
+      permissionOverwrites: [
+        {
+          id: interaction.guild.id,
+          deny: ['ViewChannel'],
+        },
+        {
+          id: interaction.user.id,
+          allow: ['ViewChannel', 'SendMessages', 'ReadMessageHistory'],
+        },
+      ],
+    });
 
-        const embed = new EmbedBuilder()
-            .setColor(0x0099FF)
-            .setTitle('ZionixMC • Ticket System')
-            .setDescription('Please select a ticket type from the dropdown below to get started.');
+    const questions = questionFlows[category.value];
+    const embed = new EmbedBuilder()
+      .setTitle('Ticket Created')
+      .setDescription(`Welcome to your ticket, ${interaction.user}!\nPlease answer the following questions:`)
+      .setColor('#ffff00')
+      .addFields(questions.map(q => ({ name: q.label, value: 'Waiting for response...', inline: false })));
 
-        await message.channel.send({
-            embeds: [embed],
-            components: [row]
-        });
+    const buttons = new ActionRowBuilder()
+      .addComponents(
+        new ButtonBuilder()
+          .setCustomId('close-ticket')
+          .setLabel('Close Ticket')
+          .setStyle(ButtonStyle.Danger),
+        new ButtonBuilder()
+          .setCustomId('claim-ticket')
+          .setLabel('Claim Ticket')
+          .setStyle(ButtonStyle.Success)
+      );
+
+    await channel.send({ content: `<@&${process.env.STAFF_ROLE_ID}> ${interaction.user}`, embeds: [embed], components: [buttons] });
+    setTimeout(() => channel.bulkDelete(1), 1000);
+
+    await interaction.reply({ content: `Ticket created! ${channel}`, ephemeral: true });
+  }
+
+  if (interaction.isButton()) {
+    if (interaction.customId === 'close-ticket') {
+      const transcript = await createTranscript(interaction.channel);
+      await interaction.channel.send({ files: [transcript] });
+      setTimeout(() => interaction.channel.delete(), 5000);
+      await interaction.reply({ content: 'Closing ticket...', ephemeral: true });
     }
+
+    if (interaction.customId === 'claim-ticket') {
+      await interaction.reply({ content: `Ticket claimed by ${interaction.user}!` });
+    }
+  }
 });
 
-// Event handler for interactions (like selecting ticket category)
-client.on('interactionCreate', async (interaction) => {
-    if (!interaction.isSelectMenu()) return;
-
-    const category = ticketCategories[interaction.values[0]];
-
-    if (category) {
-        const embed = new EmbedBuilder()
-            .setColor(0x00FF00)
-            .setTitle(`${category.name} Ticket`)
-            .setDescription(`Please answer the following questions to help us assist you:`);
-
-        await interaction.reply({ embeds: [embed], ephemeral: true });
-
-        // Send the questions for the selected ticket category
-        for (const question of category.questions) {
-            await interaction.followUp(question);
-        }
-    }
-});
-
-// Login the bot with your token from .env
 client.login(process.env.TOKEN);
