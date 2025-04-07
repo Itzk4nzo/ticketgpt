@@ -8,7 +8,7 @@ dotenv.config();
 
 // Set up Express server (for webhooks or web interaction if needed)
 const app = express();
-const PORT = process.env.PORT || 4983;  // Changed the port here to 4983
+const PORT = process.env.PORT || 4800;  // Changed the port here to 4800
 
 app.get('/', (req, res) => {
     res.send('Bot is running!');
