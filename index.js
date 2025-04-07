@@ -1,178 +1,149 @@
-
-import { Client, GatewayIntentBits, ActionRowBuilder, ButtonBuilder, EmbedBuilder, ButtonStyle } from 'discord.js';
+import { Client, GatewayIntentBits, MessageActionRow, MessageButton, EmbedBuilder } from 'discord.js';
+import dotenv from 'dotenv';
 import express from 'express';
-import { config } from 'dotenv';
 
-config();
+// Load environment variables
+dotenv.config();
 
+// Set up Express server (for webhooks or web interaction if needed)
 const app = express();
-const client = new Client({
-  intents: [
-    GatewayIntentBits.Guilds,
-    GatewayIntentBits.GuildMessages,
-    GatewayIntentBits.DirectMessages
-  ]
+const PORT = process.env.PORT || 5000;
+
+app.get('/', (req, res) => {
+    res.send('Bot is running!');
 });
 
-// Categories
-const categories = {
-  general_support: {
-    name: 'General Support',
-    emoji: '🛠️',
-    questions: [
-      { question: 'Minecraft Username', placeholder: 'Your In game name' },
-      { question: 'Issue faced', placeholder: '' },
-      { question: 'Platform', placeholder: 'Java / PE / Bedrock' }
+app.listen(PORT, () => {
+    console.log(`Express server is running on port ${PORT}`);
+});
+
+// Initialize the client with the necessary intents
+const client = new Client({
+    intents: [
+        GatewayIntentBits.Guilds,
+        GatewayIntentBits.GuildMessages,
+        GatewayIntentBits.MessageContent
     ]
-  },
-  player_report: {
-    name: 'Player Report',
-    emoji: '🚫',
-    questions: [
-      { question: 'Minecraft Username', placeholder: '' },
-      { question: 'Whom are you reporting', placeholder: 'Their username' },
-      { question: 'What did they do?', placeholder: '' },
-      { question: 'Do you have proof?', placeholder: 'Yes / No' }
-    ]
-  },
-  buy: {
-    name: 'Buy',
-    emoji: '💸',
-    questions: [
-      { question: 'Minecraft Username', placeholder: '' },
-      { question: 'What would you like to buy?', placeholder: '' },
-      { question: 'Payment Method', placeholder: '' }
-    ]
-  },
-  claiming: {
-    name: 'Claiming',
-    emoji: '🎁',
-    questions: [
-      { question: 'Minecraft Username', placeholder: '' },
-      { question: 'What did you win?', placeholder: '' },
-      { question: 'Do you have proof?', placeholder: 'Yes / No' }
-    ]
-  },
-  issues: {
-    name: 'Issues',
-    emoji: '📋',
-    questions: [
-      { question: 'Minecraft Username', placeholder: '' },
-      { question: 'Issue faced', placeholder: '' },
-      { question: 'Platform', placeholder: 'Java / PE / Bedrock' }
-    ]
-  }
+});
+
+// Event handler for when the bot is ready
+client.once('ready', () => {
+    console.log(`Logged in as ${client.user.tag}`);
+});
+
+// Define categories
+const ticketCategories = {
+    GENERAL_SUPPORT: {
+        emoji: '<a:support:1353334302036856885>',
+        name: 'GENERAL SUPPORT',
+        questions: ['Minecraft Username', 'Issue faced', 'Platform (Java / PE / Bedrock)']
+    },
+    PLAYER_REPORT: {
+        emoji: '<:barrier:1304789987954262046>',
+        name: 'PLAYER REPORT',
+        questions: ['Minecraft Username', 'Whom are you reporting?', 'What did they do?', 'Do you have any proof? (Yes/No)']
+    },
+    BUY: {
+        emoji: '<a:Cart:1357966551508324492>',
+        name: 'BUY',
+        questions: ['Minecraft Username', 'What would you like to buy?', 'Payment Method']
+    },
+    CLAIMING: {
+        emoji: '<a:Gift:1353330955535908925>',
+        name: 'CLAIMING',
+        questions: ['Minecraft Username', 'What did you win?', 'Do you have proof? (Yes/No)']
+    },
+    ISSUES: {
+        emoji: '<a:notepad_gif:1296821272424218715>',
+        name: 'ISSUES',
+        questions: ['Minecraft Username', 'Issue faced', 'Platform (Java / PE / Bedrock)']
+    }
 };
 
-// Start the bot
-client.once('ready', () => {
-  console.log(`${client.user.tag} is online!`);
-});
+// Event handler for when a message is received
+client.on('messageCreate', async (message) => {
+    if (message.author.bot) return; // Ignore bot messages
 
-client.on('interactionCreate', async interaction => {
-  if (!interaction.isButton()) return;
-
-  if (interaction.customId === 'createTicket') {
-    // Create a new ticket modal
-    const modal = {
-      title: 'Create a Ticket',
-      customId: 'ticketModal',
-      components: [
-        {
-          type: 1,
-          components: [
-            {
-              type: 4,
-              customId: 'category',
-              label: 'Choose Ticket Category',
-              options: Object.keys(categories).map(category => ({
-                label: categories[category].name,
-                value: category,
-                emoji: categories[category].emoji
-              }))
-            }
-          ]
-        }
-      ]
-    };
-    await interaction.showModal(modal);
-  }
-
-  if (interaction.customId === 'ticketModal') {
-    const category = interaction.fields.getTextInputValue('category');
-    const selectedCategory = categories[category];
-
-    let questions = selectedCategory.questions;
-    let responses = [];
-    let i = 0;
-
-    const askQuestion = async () => {
-      if (i < questions.length) {
-        await interaction.reply({ content: questions[i].question, ephemeral: true });
-        i++;
-        setTimeout(askQuestion, 5000);
-      } else {
-        const channel = await interaction.guild.channels.create({
-          name: `ticket-${interaction.user.username}`,
-          type: 'text',
-          parent: process.env[`CATEGORY_${category.toUpperCase()}`],
-          reason: `Support ticket created by ${interaction.user.tag}`
-        });
+    // Command to trigger the ticket panel
+    if (message.content === '!panel') {
+        const row = new MessageActionRow()
+            .addComponents(
+                new MessageButton()
+                    .setCustomId('support_ticket')
+                    .setLabel('Create Support Ticket')
+                    .setStyle('PRIMARY'),
+                new MessageButton()
+                    .setCustomId('report_ticket')
+                    .setLabel('Create Report Ticket')
+                    .setStyle('DANGER'),
+                new MessageButton()
+                    .setCustomId('buy_ticket')
+                    .setLabel('Create Buy Ticket')
+                    .setStyle('SUCCESS'),
+                new MessageButton()
+                    .setCustomId('claim_ticket')
+                    .setLabel('Create Claim Ticket')
+                    .setStyle('SECONDARY'),
+                new MessageButton()
+                    .setCustomId('issue_ticket')
+                    .setLabel('Create Issue Ticket')
+                    .setStyle('PRIMARY')
+            );
 
         const embed = new EmbedBuilder()
-          .setTitle(`${selectedCategory.name} - Ticket Summary`)
-          .setColor('#3498db')
-          .setDescription(`Category: ${selectedCategory.name}`)
-          .addFields({ name: 'Questions and Responses', value: responses.map((r, index) => `${selectedCategory.questions[index].question}: ${r}`).join('\n') });
+            .setColor(0x0099FF)
+            .setTitle('ZionixMC • Ticket System')
+            .setDescription('Please select a ticket type by clicking a button below to get started.');
 
-        await channel.send({ embeds: [embed] });
+        await message.channel.send({
+            embeds: [embed],
+            components: [row]
+        });
+    }
 
-        const row = new ActionRowBuilder()
-          .addComponents(
-            new ButtonBuilder()
-              .setCustomId('claimTicket')
-              .setLabel('Claim')
-              .setStyle(ButtonStyle.Success),
-            new ButtonBuilder()
-              .setCustomId('closeTicket')
-              .setLabel('Close')
-              .setStyle(ButtonStyle.Danger)
-          );
+    // Handle button interactions
+    if (message.componentType === 'BUTTON') {
+        const category = ticketCategories[message.customId.toUpperCase() + '_TICKET'];
 
-        await channel.send({ content: 'Staff, please claim or close the ticket.', components: [row] });
-      }
-    };
+        if (category) {
+            const embed = new EmbedBuilder()
+                .setColor(0x00FF00)
+                .setTitle(`${category.name} Ticket`)
+                .setDescription(`Please answer the following questions to help us assist you:`);
 
-    askQuestion();
-  }
+            await message.channel.send({ embeds: [embed] });
+
+            // Send the questions for the selected ticket category
+            for (const question of category.questions) {
+                await message.channel.send(question);
+            }
+        }
+    }
 });
 
-client.on('messageCreate', async message => {
-  if (message.content === '!ticket') {
-    const row = new ActionRowBuilder().addComponents(
-      new ButtonBuilder()
-        .setCustomId('createTicket')
-        .setLabel('Create Ticket')
-        .setStyle(ButtonStyle.Primary)
-    );
-    const embed = new EmbedBuilder()
-      .setColor('#3498db')
-      .setTitle('ZionixMC Support')
-      .setDescription('Click the button below to create a support ticket.');
+// Event handler for when a modal interaction is received (if using modals)
+client.on('interactionCreate', async (interaction) => {
+    if (!interaction.isButton()) return;
 
-    await message.channel.send({ embeds: [embed], components: [row] });
-  }
+    if (interaction.customId.startsWith('ticket_')) {
+        const categoryName = interaction.customId.split('_')[1];
+        const category = ticketCategories[categoryName];
+
+        if (category) {
+            const embed = new EmbedBuilder()
+                .setColor(0x0099FF)
+                .setTitle(`${category.name} Ticket`)
+                .setDescription('Please provide the necessary information to open a ticket.');
+
+            await interaction.reply({ embeds: [embed], ephemeral: true });
+
+            // Ask questions dynamically from the category
+            for (let i = 0; i < category.questions.length; i++) {
+                await interaction.channel.send(category.questions[i]);
+            }
+        }
+    }
 });
 
-// Express server to handle HTTP requests
-app.get('/', (req, res) => {
-  res.send('ZionixMC ticket bot is running!');
-});
-
-const port = process.env.PORT || 3000;
-app.listen(port, () => {
-  console.log(`Express server is up on port ${port}`);
-});
-
-// Log in the bot
+// Login the bot with your token from .env
 client.login(process.env.TOKEN);

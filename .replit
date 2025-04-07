@@ -20,6 +20,22 @@ localPort = 3000
 localPort = 3001
 externalPort = 3001
 
+[[ports]]
+localPort = 3592
+externalPort = 80
+
+[[ports]]
+localPort = 3593
+externalPort = 3000
+
+[[ports]]
+localPort = 3683
+externalPort = 3002
+
+[[ports]]
+localPort = 5000
+externalPort = 5000
+
 [workflows]
 runButton = "Run Bot"
 

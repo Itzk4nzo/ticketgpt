@@ -18,35 +18,36 @@ export default {
           label: 'GENERAL SUPPORT',
           value: 'general_support',
           description: 'Help with general server issues.',
-          emoji: '<a:support:1353334302036856885>'
+          emoji: '<a:support:1353334302036856885>',
         },
         {
           label: 'PLAYER REPORT',
           value: 'player_report',
           description: 'Report a player breaking rules.',
-          emoji: '<:barrier:1304789987954262046>'
+          emoji: '<:barrier:1304789987954262046>',
         },
         {
           label: 'BUY',
           value: 'buy',
           description: 'Ask questions about purchases.',
-          emoji: '<a:Cart:1357966551508324492>'
+          emoji: '<a:Cart:1357966551508324492>',
         },
         {
           label: 'CLAIMING',
           value: 'claiming',
           description: 'Claim rewards or prizes.',
-          emoji: '<a:Gift:1353330955535908925>'
+          emoji: '<a:Gift:1353330955535908925>',
         },
         {
           label: 'ISSUES',
           value: 'issues',
           description: 'Report technical problems.',
-          emoji: '<a:notepad_gif:1296821272424218715>'
+          emoji: '<a:notepad_gif:1296821272424218715>',
         }
       ]);
 
     const row = new ActionRowBuilder().addComponents(select);
+
     await interaction.reply({ embeds: [embed], components: [row] });
   }
 };
