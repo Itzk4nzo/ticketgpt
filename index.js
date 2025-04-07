@@ -1,4 +1,5 @@
-import { Client, GatewayIntentBits, MessageActionRow, MessageButton, EmbedBuilder } from 'discord.js';
+import pkg from 'discord.js';
+const { Client, GatewayIntentBits, ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder } = pkg;
 import dotenv from 'dotenv';
 import express from 'express';
 
@@ -66,28 +67,28 @@ client.on('messageCreate', async (message) => {
 
     // Command to trigger the ticket panel
     if (message.content === '!panel') {
-        const row = new MessageActionRow()
+        const row = new ActionRowBuilder()
             .addComponents(
-                new MessageButton()
+                new ButtonBuilder()
                     .setCustomId('support_ticket')
                     .setLabel('Create Support Ticket')
-                    .setStyle('PRIMARY'),
-                new MessageButton()
+                    .setStyle(ButtonStyle.Primary),
+                new ButtonBuilder()
                     .setCustomId('report_ticket')
                     .setLabel('Create Report Ticket')
-                    .setStyle('DANGER'),
-                new MessageButton()
+                    .setStyle(ButtonStyle.Danger),
+                new ButtonBuilder()
                     .setCustomId('buy_ticket')
                     .setLabel('Create Buy Ticket')
-                    .setStyle('SUCCESS'),
-                new MessageButton()
+                    .setStyle(ButtonStyle.Success),
+                new ButtonBuilder()
                     .setCustomId('claim_ticket')
                     .setLabel('Create Claim Ticket')
-                    .setStyle('SECONDARY'),
-                new MessageButton()
+                    .setStyle(ButtonStyle.Secondary),
+                new ButtonBuilder()
                     .setCustomId('issue_ticket')
                     .setLabel('Create Issue Ticket')
-                    .setStyle('PRIMARY')
+                    .setStyle(ButtonStyle.Primary)
             );
 
         const embed = new EmbedBuilder()
