@@ -82,20 +82,16 @@ client.on('interactionCreate', async interaction => {
         filter: i => i.customId === `ticket-modal-${category.value}`
       });
 
-      // Check existing tickets
-      const existingTickets = interaction.guild.channels.cache.filter(ch => 
-        ch.name.includes(interaction.user.username) && 
-        (ch.parentId === process.env.CATEGORY_BUY ||
-         ch.parentId === process.env.CATEGORY_GENERAL_SUPPORT ||
-         ch.parentId === process.env.CATEGORY_PLAYER_REPORT ||
-         ch.parentId === process.env.CATEGORY_CLAIMING ||
-         ch.parentId === process.env.CATEGORY_ISSUES)
+      // Count user's existing tickets across all support categories
+      const userTickets = interaction.guild.channels.cache.filter(channel => 
+        channel.name.toLowerCase().includes(interaction.user.username.toLowerCase()) &&
+        ticketCategories.some(cat => channel.parentId === process.env[`CATEGORY_${cat.value.toUpperCase()}`])
       );
 
-      if (existingTickets.size >= 2) {
-        await modalResponse.reply({ 
-          content: 'You can only have up to 2 tickets open at a time. Please close your existing tickets first.', 
-          ephemeral: true 
+      if (userTickets.size >= 2) {
+        await modalResponse.reply({
+          content: '❌ You already have 2 tickets open. Please close your existing tickets before creating a new one.',
+          ephemeral: true
         });
         return;
       }
