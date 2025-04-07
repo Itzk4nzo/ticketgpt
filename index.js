@@ -143,6 +143,13 @@ client.on('interactionCreate', async interaction => {
   if (interaction.isButton()) {
     if (interaction.customId === 'close-ticket') {
       const transcript = await createTranscript(interaction.channel);
+      const transcriptChannel = interaction.guild.channels.cache.get(process.env.TRANSCRIPT_CHANNEL_ID);
+      if (transcriptChannel) {
+        await transcriptChannel.send({
+          content: `Ticket Transcript - ${interaction.channel.name}\nClosed by: ${interaction.user.tag}`,
+          files: [transcript]
+        });
+      }
       await interaction.channel.send({ files: [transcript] });
       setTimeout(() => interaction.channel.delete(), 5000);
       await interaction.reply({ content: 'Closing ticket...', ephemeral: true });
@@ -199,6 +206,13 @@ client.on('interactionCreate', async interaction => {
       .setTimestamp();
 
     const transcript = await createTranscript(interaction.channel);
+    const transcriptChannel = interaction.guild.channels.cache.get(process.env.TRANSCRIPT_CHANNEL_ID);
+    if (transcriptChannel) {
+      await transcriptChannel.send({
+        content: `Ticket Transcript - ${interaction.channel.name}\nClosed by: ${interaction.user.tag}\nReason: ${reason}`,
+        files: [transcript]
+      });
+    }
     await interaction.channel.send({ embeds: [closeEmbed], files: [transcript] });
     setTimeout(() => interaction.channel.delete(), 5000);
     await interaction.reply({ content: 'Closing ticket with reason...', ephemeral: true });
