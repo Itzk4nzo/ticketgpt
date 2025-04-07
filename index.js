@@ -1,4 +1,5 @@
 import { Client, GatewayIntentBits, Collection, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ChannelType, ModalBuilder, TextInputBuilder, TextInputStyle } from 'discord.js';
+import http from 'http';
 import { config } from 'dotenv';
 import fs from 'fs';
 import path from 'path';
@@ -225,6 +226,16 @@ client.on('interactionCreate', async interaction => {
     setTimeout(() => interaction.channel.delete(), 5000);
     await interaction.reply({ content: 'Closing ticket with reason...', ephemeral: true });
   }
+});
+
+// Create HTTP server for uptime monitoring
+const server = http.createServer((req, res) => {
+  res.writeHead(200);
+  res.end('Bot is alive!');
+});
+
+server.listen(3000, '0.0.0.0', () => {
+  console.log('Server is running on port 3000');
 });
 
 client.login(process.env.TOKEN);
