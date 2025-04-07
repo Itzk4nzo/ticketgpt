@@ -8,7 +8,7 @@ export default {
     const embed = new EmbedBuilder()
       .setTitle('ZionixMC • Ticket')
       .setDescription('ZionixMC | Support Tickets\nTickets are used to provide support to members of the ZionixMC!\nPlease don\'t waste time with tickets and try to respond quickly. Only open a ticket if necessary.')
-      .setColor('#ffff00');
+      .setColor('#ff0000');
 
     const select = new StringSelectMenuBuilder()
       .setCustomId('select-category')

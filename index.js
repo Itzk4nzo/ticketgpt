@@ -1,4 +1,3 @@
-
 import { Client, GatewayIntentBits, Collection, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ChannelType, ModalBuilder, TextInputBuilder, TextInputStyle } from 'discord.js';
 import { config } from 'dotenv';
 import fs from 'fs';
@@ -75,7 +74,7 @@ client.on('interactionCreate', async interaction => {
 
     modal.addComponents(actionRows);
     await interaction.showModal(modal);
-    
+
     try {
       const modalResponse = await interaction.awaitModalSubmit({
         time: 300000,
@@ -107,13 +106,13 @@ client.on('interactionCreate', async interaction => {
       const embed = new EmbedBuilder()
         .setTitle('Ticket Created')
         .setDescription(`Ticket created by ${interaction.user}`)
-        .setColor('#ffff00')
+        .setColor('#ff0000')
         .addFields(responses);
 
       const welcomeEmbed = new EmbedBuilder()
         .setTitle('Welcome to Support!')
         .setDescription(`Hello ${interaction.user},\n\nA staff member will be with you shortly. Please be patient and provide any additional information that might help us assist you better.\n\n**Category**: ${category.label}\n**Status**: Open`)
-        .setColor('#00ff00')
+        .setColor('#ff0000')
         .setTimestamp();
 
       const buttons = new ActionRowBuilder()
@@ -153,9 +152,9 @@ client.on('interactionCreate', async interaction => {
       const claimEmbed = new EmbedBuilder()
         .setTitle('Ticket Claimed')
         .setDescription(`This ticket has been claimed by ${interaction.user}`)
-        .setColor('#00ff00')
+        .setColor('#ff0000')
         .setTimestamp();
-      
+
       await interaction.message.edit({
         embeds: [interaction.message.embeds[0].setDescription(interaction.message.embeds[0].description.replace('Open', `Claimed by ${interaction.user.tag}`)), interaction.message.embeds[1]],
         components: [new ActionRowBuilder()
@@ -170,7 +169,7 @@ client.on('interactionCreate', async interaction => {
               .setStyle(ButtonStyle.Secondary)
           )]
       });
-      
+
       await interaction.reply({ embeds: [claimEmbed] });
     }
 
