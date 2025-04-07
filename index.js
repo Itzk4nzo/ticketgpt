@@ -111,21 +111,25 @@ client.on('interactionCreate', async interaction => {
         .addFields(responses);
 
       const buttons = new ActionRowBuilder()
-      .addComponents(
-        new ButtonBuilder()
-          .setCustomId('close-ticket')
-          .setLabel('Close Ticket')
-          .setStyle(ButtonStyle.Danger),
-        new ButtonBuilder()
-          .setCustomId('claim-ticket')
-          .setLabel('Claim Ticket')
-          .setStyle(ButtonStyle.Success)
-      );
+        .addComponents(
+          new ButtonBuilder()
+            .setCustomId('close-ticket')
+            .setLabel('Close Ticket')
+            .setStyle(ButtonStyle.Danger),
+          new ButtonBuilder()
+            .setCustomId('claim-ticket')
+            .setLabel('Claim Ticket')
+            .setStyle(ButtonStyle.Success)
+        );
 
-    await channel.send({ content: `<@&${process.env.STAFF_ROLE_ID}> ${interaction.user}`, embeds: [embed], components: [buttons] });
-    setTimeout(() => channel.bulkDelete(1), 1000);
+      await channel.send({ content: `<@&${process.env.STAFF_ROLE_ID}> ${interaction.user}`, embeds: [embed], components: [buttons] });
+      setTimeout(() => channel.bulkDelete(1), 1000);
 
-    await interaction.reply({ content: `Ticket created! ${channel}`, ephemeral: true });
+      await interaction.reply({ content: `Ticket created! ${channel}`, ephemeral: true });
+    } catch (error) {
+      console.error('Error handling modal submission:', error);
+      await interaction.followUp({ content: 'There was an error processing your ticket request.', ephemeral: true }).catch(console.error);
+    }
   }
 
   if (interaction.isButton()) {
