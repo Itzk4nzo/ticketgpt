@@ -82,9 +82,13 @@ client.on('interactionCreate', async interaction => {
       });
 
       const channel = await interaction.guild.channels.create({
-        name: `ticket-${interaction.user.username}`,
+        name: `${category.value}-${interaction.user.username}`,
         type: ChannelType.GuildText,
-        parent: category.folderId, // This will place the channel in the correct category
+        parent: interaction.values[0] === 'buy' ? process.env.CATEGORY_BUY :
+               interaction.values[0] === 'general_support' ? process.env.CATEGORY_GENERAL_SUPPORT :
+               interaction.values[0] === 'player_report' ? process.env.CATEGORY_PLAYER_REPORT :
+               interaction.values[0] === 'claiming' ? process.env.CATEGORY_CLAIMING :
+               process.env.CATEGORY_ISSUES,
         permissionOverwrites: [
           {
             id: interaction.guild.id,
