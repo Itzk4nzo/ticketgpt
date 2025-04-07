@@ -269,11 +269,15 @@ client.on(Events.InteractionCreate, async (interaction) => {
 });
 
 // LOGIN
+console.log('🔄 Attempting to login to Discord...');
 client.login(process.env.TOKEN).then(() => {
   console.log('✅ Successfully logged in to Discord!');
+  console.log('🤖 Bot User:', client.user?.tag);
 }).catch((err) => {
   console.error("❌ Failed to login:", err.message);
-  if (err.message.includes('invalid token')) {
-    console.error("❗ Please check if your TOKEN is correct in the Secrets tab");
+  if (!process.env.TOKEN) {
+    console.error("❗ TOKEN environment variable is missing!");
+  } else if (err.message.includes('invalid token')) {
+    console.error("❗ The provided TOKEN appears to be invalid. Please check if your TOKEN is correct in the Secrets tab");
   }
 });
