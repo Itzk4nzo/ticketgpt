@@ -12,7 +12,13 @@ config();
 
 const commands = [];
 const commandsPath = path.join(__dirname, 'commands');
-const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.js'));
+let commandFiles = [];
+try {
+  commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.js'));
+} catch (error) {
+  console.error('❌ Error reading commands directory:', error);
+  process.exit(1);
+}
 
 for (const file of commandFiles) {
   const filePath = path.join(commandsPath, file);
