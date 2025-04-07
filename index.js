@@ -1,10 +1,17 @@
-const { Client, Intents, MessageActionRow, MessageButton, MessageEmbed } = require('discord.js');
-const express = require('express');
-const { token, clientId, guildId, supportCategoryId, playerReportCategoryId, buyCategoryId, claimingCategoryId, issuesCategoryId } = process.env;
+
+import { Client, GatewayIntentBits, ActionRowBuilder, ButtonBuilder, EmbedBuilder, ButtonStyle } from 'discord.js';
+import express from 'express';
+import { config } from 'dotenv';
+
+config();
 
 const app = express();
 const client = new Client({
-  intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MESSAGES, Intents.FLAGS.DIRECT_MESSAGES]
+  intents: [
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMessages,
+    GatewayIntentBits.DirectMessages
+  ]
 });
 
 // Categories
@@ -103,34 +110,33 @@ client.on('interactionCreate', async interaction => {
       if (i < questions.length) {
         await interaction.reply({ content: questions[i].question, ephemeral: true });
         i++;
-        setTimeout(askQuestion, 5000); // Wait 5 seconds before asking next question
+        setTimeout(askQuestion, 5000);
       } else {
-        // All questions answered, create the ticket
         const channel = await interaction.guild.channels.create({
           name: `ticket-${interaction.user.username}`,
           type: 'text',
-          parent: category === 'general_support' ? supportCategoryId : category === 'player_report' ? playerReportCategoryId : category === 'buy' ? buyCategoryId : category === 'claiming' ? claimingCategoryId : issuesCategoryId,
+          parent: process.env[`CATEGORY_${category.toUpperCase()}`],
           reason: `Support ticket created by ${interaction.user.tag}`
         });
 
-        const embed = new MessageEmbed()
+        const embed = new EmbedBuilder()
           .setTitle(`${selectedCategory.name} - Ticket Summary`)
           .setColor('#3498db')
           .setDescription(`Category: ${selectedCategory.name}`)
-          .addField('Questions and Responses', responses.map((r, index) => `${selectedCategory.questions[index].question}: ${r}`).join('\n'));
+          .addFields({ name: 'Questions and Responses', value: responses.map((r, index) => `${selectedCategory.questions[index].question}: ${r}`).join('\n') });
 
         await channel.send({ embeds: [embed] });
 
-        const row = new MessageActionRow()
+        const row = new ActionRowBuilder()
           .addComponents(
-            new MessageButton()
+            new ButtonBuilder()
               .setCustomId('claimTicket')
               .setLabel('Claim')
-              .setStyle('SUCCESS'),
-            new MessageButton()
+              .setStyle(ButtonStyle.Success),
+            new ButtonBuilder()
               .setCustomId('closeTicket')
               .setLabel('Close')
-              .setStyle('DANGER')
+              .setStyle(ButtonStyle.Danger)
           );
 
         await channel.send({ content: 'Staff, please claim or close the ticket.', components: [row] });
@@ -143,13 +149,13 @@ client.on('interactionCreate', async interaction => {
 
 client.on('messageCreate', async message => {
   if (message.content === '!ticket') {
-    const row = new MessageActionRow().addComponents(
-      new MessageButton()
+    const row = new ActionRowBuilder().addComponents(
+      new ButtonBuilder()
         .setCustomId('createTicket')
         .setLabel('Create Ticket')
-        .setStyle('PRIMARY')
+        .setStyle(ButtonStyle.Primary)
     );
-    const embed = new MessageEmbed()
+    const embed = new EmbedBuilder()
       .setColor('#3498db')
       .setTitle('ZionixMC Support')
       .setDescription('Click the button below to create a support ticket.');
@@ -169,4 +175,4 @@ app.listen(port, () => {
 });
 
 // Log in the bot
-client.login(token);
+client.login(process.env.TOKEN);
