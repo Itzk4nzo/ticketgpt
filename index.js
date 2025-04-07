@@ -21,7 +21,7 @@ dotenv.config();
 // EXPRESS SERVER FOR 24/7 HOSTING (REPLIT)
 const app = express();
 app.get('/', (req, res) => res.send('Bot is running!'));
-app.listen(3000, '0.0.0.0', () => console.log('✅ Express server is up on port 3000'));
+app.listen(3001, '0.0.0.0', () => console.log('✅ Express server is up on port 3001'));
 
 // CLIENT SETUP
 const client = new Client({
