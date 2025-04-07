@@ -162,8 +162,11 @@ client.on('interactionCreate', async interaction => {
         .setColor('#ff0000')
         .setTimestamp();
 
+      const updatedEmbed = EmbedBuilder.from(interaction.message.embeds[0])
+        .setDescription(interaction.message.embeds[0].description.replace('Open', `Claimed by ${interaction.user.tag}`));
+
       await interaction.message.edit({
-        embeds: [interaction.message.embeds[0].setDescription(interaction.message.embeds[0].description.replace('Open', `Claimed by ${interaction.user.tag}`)), interaction.message.embeds[1]],
+        embeds: [updatedEmbed, interaction.message.embeds[1]],
         components: [new ActionRowBuilder()
           .addComponents(
             new ButtonBuilder()
