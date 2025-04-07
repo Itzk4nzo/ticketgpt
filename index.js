@@ -56,22 +56,6 @@ client.on('interactionCreate', async interaction => {
     const category = ticketCategories.find(cat => cat.value === interaction.values[0]);
     if (!category) return;
 
-    const channel = await interaction.guild.channels.create({
-      name: `ticket-${interaction.user.username}`,
-      type: ChannelType.GuildText,
-      parent: category.folderId,
-      permissionOverwrites: [
-        {
-          id: interaction.guild.id,
-          deny: ['ViewChannel'],
-        },
-        {
-          id: interaction.user.id,
-          allow: ['ViewChannel', 'SendMessages', 'ReadMessageHistory'],
-        },
-      ],
-    });
-
     // Create and show modal
     const modal = new ModalBuilder()
       .setCustomId(`ticket-modal-${category.value}`)
@@ -96,6 +80,22 @@ client.on('interactionCreate', async interaction => {
       const modalResponse = await interaction.awaitModalSubmit({
         time: 300000,
         filter: i => i.customId === `ticket-modal-${category.value}`
+      });
+
+      const channel = await interaction.guild.channels.create({
+        name: `ticket-${interaction.user.username}`,
+        type: ChannelType.GuildText,
+        parent: category.folderId,
+        permissionOverwrites: [
+          {
+            id: interaction.guild.id,
+            deny: ['ViewChannel'],
+          },
+          {
+            id: interaction.user.id,
+            allow: ['ViewChannel', 'SendMessages', 'ReadMessageHistory'],
+          },
+        ],
       });
 
       const responses = questions.map(q => ({
@@ -133,7 +133,6 @@ client.on('interactionCreate', async interaction => {
         );
 
       await channel.send({ content: `<@&${process.env.STAFF_ROLE_ID}> ${interaction.user}`, embeds: [welcomeEmbed, embed], components: [buttons] });
-      setTimeout(() => channel.bulkDelete(1), 1000);
 
       await interaction.reply({ content: `Ticket created! ${channel}`, ephemeral: true });
     } catch (error) {
