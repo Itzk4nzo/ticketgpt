@@ -82,9 +82,9 @@ client.on('interactionCreate', async interaction => {
       });
 
       const channel = await interaction.guild.channels.create({
-        name: `${category.value}-${interaction.user.username}`,
+        name: `ticket-${interaction.user.username}`,
         type: ChannelType.GuildText,
-        parent: category.folderId,
+        parent: category.folderId, // This will place the channel in the correct category
         permissionOverwrites: [
           {
             id: interaction.guild.id,
