@@ -65,7 +65,7 @@ client.on('messageCreate', async message => {
         {
           label: 'BUY',
           value: 'buy',
-          description: 'Ask questions about purchases.',
+          description: 'To Purchase Anything.',
           emoji: '<a:Cart:1357966551508324492>',
         },
         {
