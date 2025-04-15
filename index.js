@@ -223,33 +223,39 @@ client.on('interactionCreate', async interaction => {
       setTimeout(() => interaction.channel.delete(), 5000);
     }
 
-    if (interaction.customId === 'claim-ticket') {
-      const claimEmbed = new EmbedBuilder()
-        .setTitle('Ticket Claimed')
-        .setDescription(`This ticket has been claimed by ${interaction.user}`)
-        .setColor('#ff0000')
-        .setTimestamp();
+if (interaction.customId === 'claim-ticket') {
+  const staffRoleId = process.env.STAFF_ROLE_ID;
+  if (!interaction.member.roles.cache.has(staffRoleId)) {
+    await interaction.reply({ content: '❌ You do not have permission to claim tickets.', ephemeral: true });
+    return;
+  }
 
-      const updatedEmbed = EmbedBuilder.from(interaction.message.embeds[0])
-        .setDescription(interaction.message.embeds[0].description.replace('Open', `Claimed by ${interaction.user.tag}`));
+  const claimEmbed = new EmbedBuilder()
+    .setTitle('Ticket Claimed')
+    .setDescription(`This ticket has been claimed by ${interaction.user}`)
+    .setColor('#ff0000')
+    .setTimestamp();
 
-      await interaction.message.edit({
-        embeds: [updatedEmbed, interaction.message.embeds[1]],
-        components: [new ActionRowBuilder()
-          .addComponents(
-            new ButtonBuilder()
-              .setCustomId('close-ticket')
-              .setLabel('Close Ticket')
-              .setStyle(ButtonStyle.Danger),
-            new ButtonBuilder()
-              .setCustomId('close-with-reason')
-              .setLabel('Close with Reason')
-              .setStyle(ButtonStyle.Secondary)
-          )]
-      });
+  const updatedEmbed = EmbedBuilder.from(interaction.message.embeds[0])
+    .setDescription(interaction.message.embeds[0].description.replace('Open', `Claimed by ${interaction.user.tag}`));
 
-      await interaction.reply({ embeds: [claimEmbed] });
-    }
+  await interaction.message.edit({
+    embeds: [updatedEmbed, interaction.message.embeds[1]],
+    components: [new ActionRowBuilder()
+      .addComponents(
+        new ButtonBuilder()
+          .setCustomId('close-ticket')
+          .setLabel('Close Ticket')
+          .setStyle(ButtonStyle.Danger),
+        new ButtonBuilder()
+          .setCustomId('close-with-reason')
+          .setLabel('Close with Reason')
+          .setStyle(ButtonStyle.Secondary)
+      )]
+  });
+
+  await interaction.reply({ embeds: [claimEmbed] });
+}
 
     if (interaction.customId === 'close-with-reason') {
       const modal = new ModalBuilder()
