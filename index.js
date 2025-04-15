@@ -28,13 +28,15 @@ client.commands = new Collection();
 const commandsPath = path.join(__dirname, 'commands');
 const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.js'));
 
-for (const file of commandFiles) {
-  const filePath = path.join(commandsPath, file);
-  const command = await import(`file://${filePath}`);
-  if ('data' in command.default && 'execute' in command.default) {
-    client.commands.set(command.default.data.name, command.default);
+(async () => {
+  for (const file of commandFiles) {
+    const filePath = path.join(commandsPath, file);
+    const command = await import(`file://${filePath}`);
+    if ('data' in command.default && 'execute' in command.default) {
+      client.commands.set(command.default.data.name, command.default);
+    }
   }
-}
+})();
 
 client.once('ready', () => {
   console.log(`Logged in as ${client.user.tag}`);
@@ -117,10 +119,15 @@ client.on('messageCreate', async message => {
     }
 
     // Create and send transcript
-    const transcript = await createTranscript(channel);
-    const transcriptChannel = message.guild.channels.cache.get(
-      process.env.TRANSCRIPT_CHANNEL_ID
-    );
+    let transcript;
+    try {
+      transcript = await createTranscript(channel);
+    } catch (error) {
+      console.error('Error creating transcript:', error);
+      return message.reply({ content: '❌ There was an error generating the transcript.', ephemeral: true });
+    }
+
+    const transcriptChannel = message.guild.channels.cache.get(process.env.TRANSCRIPT_CHANNEL_ID);
 
     if (transcriptChannel) {
       await transcriptChannel.send({
@@ -182,11 +189,11 @@ client.on('interactionCreate', async interaction => {
     try {
       const modalResponse = await interaction.awaitModalSubmit({
         time: 300000,
-        filter: i => i.customId === `ticket-modal-${category.value}`
+        filter: i => i.customId === `ticket-modal-${category.value}`,
       });
 
       // Count user's existing tickets across all support categories
-      const userTickets = interaction.guild.channels.cache.filter(channel => 
+      const userTickets = interaction.guild.channels.cache.filter(channel =>
         channel.name.toLowerCase().includes(interaction.user.username.toLowerCase()) &&
         ticketCategories.some(cat => channel.parentId === process.env[`CATEGORY_${cat.value.toUpperCase()}`])
       );
@@ -202,11 +209,7 @@ client.on('interactionCreate', async interaction => {
       const channel = await interaction.guild.channels.create({
         name: `${category.value}-${interaction.user.username}`,
         type: ChannelType.GuildText,
-        parent: interaction.values[0] === 'buy' ? process.env.CATEGORY_BUY :
-               interaction.values[0] === 'general_support' ? process.env.CATEGORY_GENERAL_SUPPORT :
-               interaction.values[0] === 'player_report' ? process.env.CATEGORY_PLAYER_REPORT :
-               interaction.values[0] === 'claiming' ? process.env.CATEGORY_CLAIMING :
-               process.env.CATEGORY_ISSUES,
+        parent: process.env[`CATEGORY_${category.value.toUpperCase()}`],
         permissionOverwrites: [
           {
             id: interaction.guild.id,
@@ -266,7 +269,14 @@ client.on('interactionCreate', async interaction => {
   if (interaction.isButton()) {
     if (interaction.customId === 'close-ticket') {
       await interaction.deferReply({ flags: MessageFlags.Ephemeral });
-      const transcript = await createTranscript(interaction.channel);
+      let transcript;
+      try {
+        transcript = await createTranscript(interaction.channel);
+      } catch (error) {
+        console.error('Error creating transcript:', error);
+        return interaction.editReply({ content: '❌ There was an error generating the transcript.', flags: MessageFlags.Ephemeral });
+      }
+
       const transcriptChannel = interaction.guild.channels.cache.get(process.env.TRANSCRIPT_CHANNEL_ID);
       if (transcriptChannel) {
         await transcriptChannel.send({
@@ -338,27 +348,34 @@ client.on('interactionCreate', async interaction => {
       .setColor('#ff0000')
       .setTimestamp();
 
-    const transcript = await createTranscript(interaction.channel);
+    let transcript;
+    try {
+      transcript = await createTranscript(interaction.channel);
+    } catch (error) {
+      console.error('Error creating transcript:', error);
+      return interaction.reply({ content: '❌ There was an error generating the transcript.', flags: MessageFlags.Ephemeral });
+    }
+
     const transcriptChannel = interaction.guild.channels.cache.get(process.env.TRANSCRIPT_CHANNEL_ID);
     if (transcriptChannel) {
       await transcriptChannel.send({
-        content: `Ticket Transcript - ${interaction.channel.name}\nClosed by: ${interaction.user.tag}\nReason: ${reason}`,
+        content: `Ticket Transcript - ${interaction.channel.name}\nClosed by: ${interaction.user.tag}`,
         files: [transcript]
       });
     }
+
     await interaction.channel.send({ embeds: [closeEmbed], files: [transcript] });
     setTimeout(() => interaction.channel.delete(), 5000);
-    await interaction.reply({ content: 'Closing ticket with reason...', flags: MessageFlags.Ephemeral });
+    await interaction.reply({ content: 'Ticket closed.', flags: MessageFlags.Ephemeral });
   }
 });
 
-// Create HTTP server for uptime monitoring
-const server = http.createServer((req, res) => {
-  res.writeHead(200);
-  res.end('Bot is alive!');
-});
+client.login(process.env.BOT_TOKEN);
 
-const PORT = process.env.PORT || 3000;
-server.listen(PORT, '0.0.0.0', () => {
-  console.log(`Server is listening on port ${PORT}`);
+// HTTP server for uptime monitoring
+http.createServer((req, res) => {
+  res.writeHead(200, { 'Content-Type': 'text/plain' });
+  res.end('ZionixMC Bot is online!');
+}).listen(process.env.PORT || 3000, () => {
+  console.log('Uptime monitoring server running...');
 });
