@@ -6,6 +6,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { ticketCategories, questionFlows } from './config.js';
 import { createTranscript } from './utils/createTranscript.js';
+import { MessageFlags } from 'discord-api-types/v10';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -96,7 +97,7 @@ client.on('interactionCreate', async interaction => {
       await command.execute(interaction);
     } catch (error) {
       console.error(error);
-      await interaction.reply({ content: 'There was an error executing this command!', ephemeral: true });
+      await interaction.reply({ content: 'There was an error executing this command!', flags: MessageFlags.Ephemeral });
     }
   }
 
@@ -139,7 +140,7 @@ client.on('interactionCreate', async interaction => {
       if (userTickets.size >= 2) {
         await modalResponse.reply({
           content: '❌ You already have 2 tickets open. Please close your existing tickets before creating a new one.',
-          ephemeral: true
+          flags: MessageFlags.Ephemeral
         });
         return;
       }
@@ -200,16 +201,16 @@ client.on('interactionCreate', async interaction => {
 
       await channel.send({ content: `<@&${process.env.STAFF_ROLE_ID}> ${interaction.user}`, embeds: [welcomeEmbed, embed], components: [buttons] });
 
-      await modalResponse.reply({ content: `Ticket created! ${channel}`, ephemeral: true });
+      await modalResponse.reply({ content: `Ticket created! ${channel}`, flags: MessageFlags.Ephemeral });
     } catch (error) {
       console.error('Error handling modal submission:', error);
-      await interaction.followUp({ content: 'There was an error processing your ticket request.', ephemeral: true }).catch(console.error);
+      await interaction.followUp({ content: 'There was an error processing your ticket request.', flags: MessageFlags.Ephemeral }).catch(console.error);
     }
   }
 
   if (interaction.isButton()) {
     if (interaction.customId === 'close-ticket') {
-      await interaction.deferReply({ ephemeral: true });
+      await interaction.deferReply({ flags: MessageFlags.Ephemeral });
       const transcript = await createTranscript(interaction.channel);
       const transcriptChannel = interaction.guild.channels.cache.get(process.env.TRANSCRIPT_CHANNEL_ID);
       if (transcriptChannel) {
@@ -219,43 +220,43 @@ client.on('interactionCreate', async interaction => {
         });
       }
       await interaction.channel.send({ files: [transcript] });
-      await interaction.editReply({ content: 'Closing ticket...', ephemeral: true });
+      await interaction.editReply({ content: 'Closing ticket...', flags: MessageFlags.Ephemeral });
       setTimeout(() => interaction.channel.delete(), 5000);
     }
 
-if (interaction.customId === 'claim-ticket') {
-  const staffRoleId = process.env.STAFF_ROLE_ID;
-  if (!interaction.member.roles.cache.has(staffRoleId)) {
-    await interaction.reply({ content: '❌ You do not have permission to claim tickets.', ephemeral: true });
-    return;
-  }
+    if (interaction.customId === 'claim-ticket') {
+      const staffRoleId = process.env.STAFF_ROLE_ID;
+      if (!interaction.member.roles.cache.has(staffRoleId)) {
+        await interaction.reply({ content: '❌ You do not have permission to claim tickets.', flags: MessageFlags.Ephemeral });
+        return;
+      }
 
-  const claimEmbed = new EmbedBuilder()
-    .setTitle('Ticket Claimed')
-    .setDescription(`This ticket has been claimed by ${interaction.user}`)
-    .setColor('#ff0000')
-    .setTimestamp();
+      const claimEmbed = new EmbedBuilder()
+        .setTitle('Ticket Claimed')
+        .setDescription(`This ticket has been claimed by ${interaction.user}`)
+        .setColor('#ff0000')
+        .setTimestamp();
 
-  const updatedEmbed = EmbedBuilder.from(interaction.message.embeds[0])
-    .setDescription(interaction.message.embeds[0].description.replace('Open', `Claimed by ${interaction.user.tag}`));
+      const updatedEmbed = EmbedBuilder.from(interaction.message.embeds[0])
+        .setDescription(interaction.message.embeds[0].description.replace('Open', `Claimed by ${interaction.user.tag}`));
 
-  await interaction.message.edit({
-    embeds: [updatedEmbed, interaction.message.embeds[1]],
-    components: [new ActionRowBuilder()
-      .addComponents(
-        new ButtonBuilder()
-          .setCustomId('close-ticket')
-          .setLabel('Close Ticket')
-          .setStyle(ButtonStyle.Danger),
-        new ButtonBuilder()
-          .setCustomId('close-with-reason')
-          .setLabel('Close with Reason')
-          .setStyle(ButtonStyle.Secondary)
-      )]
-  });
+      await interaction.message.edit({
+        embeds: [updatedEmbed, interaction.message.embeds[1]],
+        components: [new ActionRowBuilder()
+          .addComponents(
+            new ButtonBuilder()
+              .setCustomId('close-ticket')
+              .setLabel('Close Ticket')
+              .setStyle(ButtonStyle.Danger),
+            new ButtonBuilder()
+              .setCustomId('close-with-reason')
+              .setLabel('Close with Reason')
+              .setStyle(ButtonStyle.Secondary)
+          )]
+      });
 
-  await interaction.reply({ embeds: [claimEmbed] });
-}
+      await interaction.reply({ embeds: [claimEmbed] });
+    }
 
     if (interaction.customId === 'close-with-reason') {
       const modal = new ModalBuilder()
@@ -292,7 +293,7 @@ if (interaction.customId === 'claim-ticket') {
     }
     await interaction.channel.send({ embeds: [closeEmbed], files: [transcript] });
     setTimeout(() => interaction.channel.delete(), 5000);
-    await interaction.reply({ content: 'Closing ticket with reason...', ephemeral: true });
+    await interaction.reply({ content: 'Closing ticket with reason...', flags: MessageFlags.Ephemeral });
   }
 });
 
