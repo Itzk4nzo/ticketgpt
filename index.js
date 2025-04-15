@@ -207,21 +207,25 @@ client.on('interactionCreate', async interaction => {
         return;
       }
 
-      const channel = await interaction.guild.channels.create({
-        name: `${category.value}-${interaction.user.username}`,
-        type: ChannelType.GuildText,
-        parent: process.env[`CATEGORY_${category.value.toUpperCase()}`],
-        permissionOverwrites: [
-          {
-            id: interaction.guild.id,
-            deny: ['ViewChannel'],
-          },
-          {
-            id: interaction.user.id,
-            allow: ['ViewChannel', 'SendMessages', 'ReadMessageHistory'],
-          },
-        ],
-      });
+const channel = await interaction.guild.channels.create({
+  name: `${category.value}-${interaction.user.username}`,
+  type: ChannelType.GuildText,
+  parent: process.env[`CATEGORY_${category.value.toUpperCase()}`],
+  permissionOverwrites: [
+    {
+      id: interaction.guild.id,
+      deny: ['ViewChannel'],
+    },
+    {
+      id: interaction.user.id,
+      allow: ['ViewChannel', 'SendMessages', 'ReadMessageHistory'],
+    },
+    {
+      id: process.env.STAFF_ROLE_ID,
+      allow: ['ViewChannel', 'SendMessages', 'ReadMessageHistory'],
+    }
+  ],
+});
 
       const responses = questions.map(q => ({
         name: q.label,
