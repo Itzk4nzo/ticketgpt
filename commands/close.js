@@ -5,29 +5,21 @@ export default {
   data: new SlashCommandBuilder()
     .setName('close')
     .setDescription('Close the current ticket')
-    .setDefaultMemberPermissions(PermissionFlagsBits.ManageChannels), // Optional: Limit in permission
+    .setDefaultMemberPermissions(PermissionFlagsBits.ManageChannels),
+
   async execute(interaction) {
     const staffRoleId = process.env.STAFF_ROLE_ID;
 
-    // Check if user has the staff role
     if (!interaction.member.roles.cache.has(staffRoleId)) {
-      await interaction.reply({ content: '❌ You do not have permission to close tickets.', ephemeral: true });
-      return;
+      return interaction.reply({ content: '❌ You do not have permission to close tickets.', ephemeral: true });
     }
 
     const channel = interaction.channel;
 
-    // Check if current channel is a ticket (you can adjust this logic if needed)
-    if (!channel.name.startsWith('general_support') &&
-        !channel.name.startsWith('player_report') &&
-        !channel.name.startsWith('buy') &&
-        !channel.name.startsWith('claiming') &&
-        !channel.name.startsWith('issues')) {
-      await interaction.reply({ content: '❌ This is not a ticket channel.', ephemeral: true });
-      return;
+    if (!['general_support', 'player_report', 'buy', 'claiming', 'issues'].some(prefix => channel.name.startsWith(prefix))) {
+      return interaction.reply({ content: '❌ This is not a ticket channel.', ephemeral: true });
     }
 
-    // Create and send transcript
     const transcript = await createTranscript(channel);
     const transcriptChannel = interaction.guild.channels.cache.get(process.env.TRANSCRIPT_CHANNEL_ID);
 
