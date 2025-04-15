@@ -8,10 +8,11 @@ import { ticketCategories, questionFlows } from './config.js';
 import { createTranscript } from './utils/createTranscript.js';
 import { MessageFlags } from 'discord-api-types/v10';
 
+// Load environment variables from .env file
+config();
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-
-config();
 
 const client = new Client({
   intents: [
