@@ -40,6 +40,7 @@ client.once('ready', () => {
   console.log(`Logged in as ${client.user.tag}`);
 });
 
+// Message Listener for !panel and !close
 client.on('messageCreate', async message => {
   if (message.content.toLowerCase() === '!panel') {
     const embed = new EmbedBuilder()
@@ -85,6 +86,59 @@ client.on('messageCreate', async message => {
 
     const row = new ActionRowBuilder().addComponents(select);
     await message.channel.send({ embeds: [embed], components: [row] });
+  }
+
+  // Adding !close command
+  if (message.content.toLowerCase() === '!close') {
+    const staffRoleId = process.env.STAFF_ROLE_ID;
+
+    // Check if the user has the staff role
+    if (!message.member.roles.cache.has(staffRoleId)) {
+      return message.reply({
+        content: '❌ You do not have permission to close tickets.',
+        ephemeral: true,
+      });
+    }
+
+    const channel = message.channel;
+
+    // Check if the current channel is a ticket
+    if (
+      !channel.name.startsWith('general_support') &&
+      !channel.name.startsWith('player_report') &&
+      !channel.name.startsWith('buy') &&
+      !channel.name.startsWith('claiming') &&
+      !channel.name.startsWith('issues')
+    ) {
+      return message.reply({
+        content: '❌ This is not a ticket channel.',
+        ephemeral: true,
+      });
+    }
+
+    // Create and send transcript
+    const transcript = await createTranscript(channel);
+    const transcriptChannel = message.guild.channels.cache.get(
+      process.env.TRANSCRIPT_CHANNEL_ID
+    );
+
+    if (transcriptChannel) {
+      await transcriptChannel.send({
+        content: `📩 Ticket Transcript - ${channel.name}\nClosed by: ${message.author.tag}`,
+        files: [transcript],
+      });
+    }
+
+    await message.reply({
+      content: '✅ Ticket will be closed in 5 seconds...',
+      ephemeral: true,
+    });
+    await channel.send({
+      content: '📁 Transcript saved. Ticket will be closed shortly.',
+      files: [transcript],
+    });
+
+    setTimeout(() => channel.delete().catch(console.error), 5000);
   }
 });
 
@@ -208,6 +262,7 @@ client.on('interactionCreate', async interaction => {
     }
   }
 
+  // Ticket handling (Claim and Close)
   if (interaction.isButton()) {
     if (interaction.customId === 'close-ticket') {
       await interaction.deferReply({ flags: MessageFlags.Ephemeral });
@@ -304,8 +359,4 @@ const server = http.createServer((req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, '0.0.0.0', () => {
-  console.log('Server is running on port 3000');
-});
-
-client.login(process.env.TOKEN);
+server.listen(PORT, '0.0.0.0',
