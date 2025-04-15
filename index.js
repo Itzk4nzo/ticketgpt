@@ -61,13 +61,13 @@ client.on('messageCreate', async message => {
           label: 'PLAYER REPORT',
           value: 'player_report',
           description: 'Report a player breaking rules.',
-          emoji: '<:barrier:1304789987954262046>',
+          emoji: '<:barrier:1361651824968339588>',
         },
         {
           label: 'BUY',
           value: 'buy',
           description: 'To Purchase Anything.',
-          emoji: '<a:Cart:1357966551508324492>',
+          emoji: '<:cart:1361652253278343260>',
         },
         {
           label: 'CLAIMING',
@@ -79,7 +79,7 @@ client.on('messageCreate', async message => {
           label: 'ISSUES',
           value: 'issues',
           description: 'Report technical problems.',
-          emoji: '<a:notepad_gif:1296821272424218715>',
+          emoji: '<a:note:1361652613656875059>',
         }
       ]);
 
