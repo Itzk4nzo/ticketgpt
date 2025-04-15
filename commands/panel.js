@@ -1,9 +1,10 @@
-import { SlashCommandBuilder, ActionRowBuilder, StringSelectMenuBuilder, EmbedBuilder } from 'discord.js';
+// commands/panel.js
+import { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, StringSelectMenuBuilder } from 'discord.js';
 
 export default {
   data: new SlashCommandBuilder()
     .setName('panel')
-    .setDescription('Send the ticket panel.'),
+    .setDescription('Display the support ticket panel'),
   async execute(interaction) {
     const embed = new EmbedBuilder()
       .setTitle('ZionixMC • Ticket')
@@ -29,7 +30,7 @@ export default {
         {
           label: 'BUY',
           value: 'buy',
-          description: 'Ask questions about purchases.',
+          description: 'To Purchase Anything.',
           emoji: '<a:Cart:1357966551508324492>',
         },
         {
@@ -47,7 +48,6 @@ export default {
       ]);
 
     const row = new ActionRowBuilder().addComponents(select);
-
     await interaction.reply({ embeds: [embed], components: [row] });
-  }
+  },
 };
